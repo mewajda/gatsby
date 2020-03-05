@@ -37,6 +37,21 @@ const formatAuthSettings = auth => {
 }
 
 /**
+ * Wrapper for the axios library so that we can remove the BOM character returned from the 
+ * wordpress API and re-parse the response data
+ */
+async function axiosWrapper(options) {
+  let response = await axios(options);
+
+  if (typeof response.data === 'string' && response.data.charCodeAt(0) === 0xFEFF) {
+    response.data = response.data.substr(1);
+    response.data = JSON.parse(response.data)
+  }
+
+  return response;
+}
+
+/**
  * High-level function to coordinate fetching data from a WordPress
  * site.
  */
@@ -122,7 +137,7 @@ Mama Route URL: ${url}
       }
     }
 
-    allRoutes = await axios(options)
+    allRoutes = await axiosWrapper(options)
   } catch (e) {
     httpExceptionHandler(e)
   }
@@ -209,7 +224,7 @@ async function getWPCOMAccessToken(_auth) {
         grant_type: `password`,
       }),
     }
-    result = await axios(options)
+    result = await axiosWrapper(options)
     result = result.data.access_token
   } catch (e) {
     httpExceptionHandler(e)
@@ -235,7 +250,7 @@ async function getJWToken(_auth, url) {
         password: _auth.jwt_pass,
       },
     }
-    result = await axios(options)
+    result = await axiosWrapper(options)
     result = result.data.token
   } catch (e) {
     httpExceptionHandler(e)
@@ -427,7 +442,7 @@ async function getPages(
     // but also the total count of objects, used for
     // multiple concurrent requests (rather than waterfall)
     const options = getOptions(page)
-    const { headers, data } = await axios(options)
+    const { headers, data } = await axiosWrapper(options)
 
     result = result.concat(data)
 
